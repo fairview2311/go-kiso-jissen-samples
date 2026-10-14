@@ -4,7 +4,7 @@ import (
 	"embed"
 	"errors"
 	"html/template"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"memos/internal/memo"
@@ -134,6 +134,6 @@ func render(w http.ResponseWriter, status int, name string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	if err := pages.ExecuteTemplate(w, name, data); err != nil {
-		log.Printf("画面を作れません: %v", err)
+		slog.Error("画面を作れません", "err", err)
 	}
 }
