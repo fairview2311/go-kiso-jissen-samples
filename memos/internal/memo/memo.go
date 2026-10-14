@@ -4,10 +4,13 @@ package memo
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
 	"uuid"
+
+	"github.com/mattn/go-runewidth"
 )
 
 // MaxTitleLen は、題の長さの上限（文字数）。
@@ -57,6 +60,28 @@ func (m *Memo) Edit(title, body string) error {
 // Contains は、題か本文に word が含まれるかを返す。
 func (m *Memo) Contains(word string) bool {
 	return strings.Contains(m.Title, word) || strings.Contains(m.Body, word)
+}
+
+// String は、メモを1行の文字列にする。fmt.Println などは、この形で表示する。
+func (m *Memo) String() string {
+	mark := " "
+	if m.Pinned {
+		mark = "*"
+	}
+	return fmt.Sprintf("%s %s %s  %s", mark, m.ID[:8], runewidth.FillRight(m.Title, 22), m.Body)
+}
+
+// Sort は、ピン留めしたメモを先頭に、残りを題の順に並べ替える。
+func Sort(memos []*Memo) {
+	slices.SortFunc(memos, func(a, b *Memo) int {
+		if a.Pinned != b.Pinned {
+			if a.Pinned {
+				return -1
+			}
+			return 1
+		}
+		return strings.Compare(a.Title, b.Title)
+	})
 }
 
 // validateTitle は、題が空でなく、MaxTitleLen 文字以内かを確かめる。
