@@ -1,72 +1,111 @@
-// memos は、メモの一覧を表示するコマンド。引数に言葉を渡すと、その言葉を含むメモだけを表示する。
+// memos は、メモを JSON のファイル memos.json に保存するコマンド。
+//
+//	memos add <題> <本文>    メモを足す
+//	memos list [言葉]        一覧を表示する。言葉を渡すと、その言葉を含むメモだけ
+//	memos delete <ID の先頭>  メモを消す
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"memos/internal/memo"
 	"memos/internal/store"
 )
 
+const dataFile = "memos.json"
+
 func main() {
-	s := store.NewMemoryStore()
-	if err := seed(s); err != nil {
-		fmt.Fprintln(os.Stderr, "エラー:", err)
-		os.Exit(1)
-	}
-	word := ""
-	if len(os.Args) > 1 {
-		word = os.Args[1]
-	}
-	if err := run(os.Stdout, s, word); err != nil {
+	s := store.NewFileStore(dataFile)
+	if err := run(os.Stdout, s, os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "エラー:", err)
 		os.Exit(1)
 	}
 }
 
-// seed は、練習用のメモを4件作って s に保存する。
-func seed(s store.Store) error {
-	titles := []string{"買い物リスト", "会議のメモ", "読みたい本", "週末の予定"}
-	bodies := map[string]string{
-		"買い物リスト": "牛乳と卵を買う",
-		"会議のメモ":  "来週の会議で予算を決める",
-		"読みたい本":  "Go の本を2冊",
-		"週末の予定":  "本屋に行く",
+// run は、args の最初の言葉で処理を選び、結果を w に書き出す。
+func run(w io.Writer, s store.Store, args []string) error {
+	if len(args) == 0 {
+		return list(w, s, "")
 	}
-	for i, title := range titles {
-		m, err := memo.New(title, bodies[title])
-		if err != nil {
-			return err
+	switch args[0] {
+	case "add":
+		if len(args) != 3 {
+			return errors.New("使い方: memos add <題> <本文>")
 		}
-		if i == 0 {
-			if err := m.Edit("買い物リスト（土曜）", "牛乳と卵とパンを買う"); err != nil {
-				return err
-			}
+		return add(w, s, args[1], args[2])
+	case "list":
+		word := ""
+		if len(args) > 1 {
+			word = args[1]
 		}
-		m.Pinned = i == 1
-		if err := s.Save(m); err != nil {
-			return err
+		return list(w, s, word)
+	case "delete":
+		if len(args) != 2 {
+			return errors.New("使い方: memos delete <ID の先頭>")
 		}
+		return remove(w, s, args[1])
+	default:
+		return fmt.Errorf("知らないコマンドです: %s（add・list・delete のどれか）", args[0])
 	}
+}
+
+// add は、新しいメモを作って保存する。
+func add(w io.Writer, s store.Store, title, body string) error {
+	m, err := memo.New(title, body)
+	if err != nil {
+		return err
+	}
+	if err := s.Save(m); err != nil {
+		return err
+	}
+	fmt.Fprintf(w, "追加しました: %s %s\n", m.ID[:8], m.Title)
 	return nil
 }
 
-// run は、s のメモのうち word を含むものを w に1行ずつ書き出す。word が空なら全部。
-func run(w io.Writer, s store.Store, word string) error {
-	list, err := s.List()
+// list は、word を含むメモを1行ずつ書き出す。word が空なら全部。
+func list(w io.Writer, s store.Store, word string) error {
+	memos, err := s.List()
 	if err != nil {
 		return err
 	}
 	found := 0
-	for _, m := range list {
+	for _, m := range memos {
 		if word != "" && !m.Contains(word) {
 			continue
 		}
 		fmt.Fprintln(w, m)
 		found++
 	}
-	fmt.Fprintf(w, "%d 件のメモ（全部で %d 件）\n", found, len(list))
+	fmt.Fprintf(w, "%d 件のメモ（全部で %d 件）\n", found, len(memos))
 	return nil
+}
+
+// remove は、ID が prefix で始まるメモを1件消す。
+func remove(w io.Writer, s store.Store, prefix string) error {
+	memos, err := s.List()
+	if err != nil {
+		return err
+	}
+	var hit []*memo.Memo
+	for _, m := range memos {
+		if strings.HasPrefix(m.ID, prefix) {
+			hit = append(hit, m)
+		}
+	}
+	switch len(hit) {
+	case 0:
+		return fmt.Errorf("%w: %s", store.ErrNotFound, prefix)
+	case 1:
+		if err := s.Delete(hit[0].ID); err != nil {
+			return err
+		}
+		fmt.Fprintf(w, "消しました: %s %s\n", hit[0].ID[:8], hit[0].Title)
+		return nil
+	default:
+		return fmt.Errorf("%s で始まるメモが %d 件あります。ID をもっと長く書いてください", prefix, len(hit))
+	}
 }

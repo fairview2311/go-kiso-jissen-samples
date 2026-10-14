@@ -5,3 +5,4 @@ memos/memos.exe
 *.db-shm
 *.db-wal
 .DS_Store
+memos/memos.json

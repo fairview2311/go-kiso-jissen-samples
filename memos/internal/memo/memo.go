@@ -23,12 +23,12 @@ var (
 
 // Memo は、メモ1件を表す。
 type Memo struct {
-	ID        string
-	Title     string
-	Body      string
-	Pinned    bool
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	Body      string    `json:"body"`
+	Pinned    bool      `json:"pinned"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // New は、題を確かめてから新しいメモを作る。ID は UUID で付ける。
