@@ -1,0 +1,19 @@
+{{template "header"}}
+<form class="search" action="/" method="get">
+  <input type="search" name="q" value="{{.Query}}" placeholder="言葉で探す">
+  <button>探す</button>
+  <a class="button" href="/memos/new">新しいメモ</a>
+</form>
+<p class="count">{{len .Memos}} 件のメモ</p>
+<ul class="memos">
+{{range .Memos}}
+  <li>
+    <a class="title" href="/memos/{{.ID}}/edit">{{if .Pinned}}★ {{end}}{{.Title}}</a>
+    <p class="body">{{.Body}}</p>
+    <p class="date">更新 {{date .}}</p>
+  </li>
+{{else}}
+  <li class="empty">メモはありません</li>
+{{end}}
+</ul>
+{{template "footer"}}
