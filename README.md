@@ -10,15 +10,15 @@
 
 といった使い方をしてください。
 
-## ファイルの取り方
+## ファイルを入手する方法
 
-取り方は3つあります。やりたいことに合わせて選んでください。
+入手する方法は3つあります。やりたいことに合わせて選んでください。
 
-| やりたいこと | 取り方 |
+| やりたいこと | 方法 |
 |---|---|
 | 1つのファイルだけ見比べたい・コピーしたい | 下の表の［ファイルを見る］から、ブラウザでファイルを開く。右上のコピーのボタンで中身をコピーできます |
-| ある章の終わりの memos を丸ごと手元に置きたい | 下の表の［ZIP］を押してダウンロードし、展開する |
-| 全部の章を手元に置いて、章を切り替えたい | `git clone` でクローンし、`git checkout ch05` のように切り替える（下の「git でクローンする」） |
+| ある章の終わりの memos を全部手元に置きたい | 下の表の［ZIP］を押してダウンロードし、展開する |
+| 全部の章を手元に置いて、章を切り替えたい | `git clone` でクローンし、`git checkout ch05` のように切り替える（下の「git でクローンする方法」） |
 
 ZIP を展開したり git でクローンしたりしたら、中の `memos` のフォルダーを、VS Code の［ファイル］メニューの［フォルダーを開く...］（Mac は［開く...］）で開きます。
 
@@ -40,7 +40,7 @@ ZIP を展開したり git でクローンしたりしたら、中の `memos` �
 | 第14章 | ブラウザで使える画面 | [ch14](https://github.com/fairview2311/go-kiso-jissen-samples/tree/ch14/memos) | [ZIP](https://github.com/fairview2311/go-kiso-jissen-samples/archive/refs/tags/ch14.zip) |
 | 第15章 | テスト・ログ付きの完成形（このページの `memos` と同じ） | [ch15](https://github.com/fairview2311/go-kiso-jissen-samples/tree/ch15/memos) | [ZIP](https://github.com/fairview2311/go-kiso-jissen-samples/archive/refs/tags/ch15.zip) |
 
-### git でクローンする
+### git でクローンする方法
 
 Git をインストールしている人は、ターミナルで次のように打ちます。
 
