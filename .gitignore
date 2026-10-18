@@ -1,0 +1,7 @@
+# 実行ファイル（go build で作られる）
+memos/memos
+memos/memos.exe
+*.db
+*.db-shm
+*.db-wal
+.DS_Store
