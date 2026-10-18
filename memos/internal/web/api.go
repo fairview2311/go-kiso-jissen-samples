@@ -4,7 +4,7 @@ package web
 import (
 	"encoding/json/v2"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -126,7 +126,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	if err := json.MarshalWrite(w, v); err != nil {
-		log.Printf("JSON を書けません: %v", err)
+		slog.Error("JSON を書けません", "err", err)
 	}
 }
 
@@ -147,6 +147,6 @@ func logRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start).Round(time.Microsecond))
+		slog.Info("リクエスト", "method", r.Method, "path", r.URL.Path, "time", time.Since(start).Round(time.Microsecond))
 	})
 }

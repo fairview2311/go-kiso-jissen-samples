@@ -8,3 +8,4 @@ memos/memos.exe
 memos/memos.json
 memos/cover.out
 memos/memos.db*
+memos/dist/

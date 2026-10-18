@@ -4,17 +4,21 @@
 //	memos list [言葉]        一覧を表示する。言葉を渡すと、その言葉を含むメモだけ
 //	memos delete <ID の先頭>  メモを消す
 //	memos import <ディレクトリ> ディレクトリの .txt のファイルを、メモとしてまとめて取り込む
-//	memos serve [アドレス]     Web API を動かす（アドレスの既定は localhost:8080）
+//	memos serve [アドレス]     Web API と画面を動かす（アドレスの既定は localhost:8080）
+//	memos version             バージョンを表示する
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"memos/internal/importer"
@@ -24,6 +28,9 @@ import (
 )
 
 const dataFile = "memos.db"
+
+// version は、memos のバージョン。go build の -ldflags で書き換える。
+var version = "dev"
 
 func main() {
 	s, err := store.NewSqlStore(dataFile)
@@ -72,8 +79,11 @@ func run(w io.Writer, s store.Store, args []string) error {
 			addr = args[1]
 		}
 		return serve(s, addr)
+	case "version":
+		fmt.Fprintln(w, "memos", version)
+		return nil
 	default:
-		return fmt.Errorf("知らないコマンドです: %s（add・list・delete・import・serve のどれか）", args[0])
+		return fmt.Errorf("知らないコマンドです: %s（add・list・delete・import・serve・version のどれか）", args[0])
 	}
 }
 
@@ -150,9 +160,27 @@ func importDir(w io.Writer, s store.Store, dir string) error {
 	return nil
 }
 
-// serve は、addr で Web API を動かす。止めるまで戻らない。
+// serve は、addr で Web API と画面を動かす。Ctrl+C を押すと、処理中のリクエストを終えてから止まる。
 func serve(s store.Store, addr string) error {
-	srv := web.NewServer(s)
-	log.Printf("http://%s で待っています（止めるときは Ctrl+C）", addr)
-	return http.ListenAndServe(addr, srv.Handler())
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	srv := &http.Server{Addr: addr, Handler: web.NewServer(s).Handler()}
+	errc := make(chan error, 1)
+	go func() { errc <- srv.ListenAndServe() }()
+	slog.Info("待ち受けを始めました", "url", "http://"+addr, "version", version)
+
+	select {
+	case err := <-errc:
+		return err
+	case <-ctx.Done():
+	}
+	slog.Info("止めています")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		return err
+	}
+	slog.Info("止めました")
+	return nil
 }
