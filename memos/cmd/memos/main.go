@@ -1,4 +1,4 @@
-// memos は、メモを JSON のファイル memos.json に保存するコマンド。
+// memos は、メモを SQLite のデータベース memos.db に保存するコマンド。
 //
 //	memos add <題> <本文>    メモを足す
 //	memos list [言葉]        一覧を表示する。言葉を渡すと、その言葉を含むメモだけ
@@ -23,11 +23,17 @@ import (
 	"memos/internal/web"
 )
 
-const dataFile = "memos.json"
+const dataFile = "memos.db"
 
 func main() {
-	s := store.NewFileStore(dataFile)
-	if err := run(os.Stdout, s, os.Args[1:]); err != nil {
+	s, err := store.NewSqlStore(dataFile)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "エラー:", err)
+		os.Exit(1)
+	}
+	err = run(os.Stdout, s, os.Args[1:])
+	s.Close()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "エラー:", err)
 		os.Exit(1)
 	}

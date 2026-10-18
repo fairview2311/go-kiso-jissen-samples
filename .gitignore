@@ -7,3 +7,4 @@ memos/memos.exe
 .DS_Store
 memos/memos.json
 memos/cover.out
+memos/memos.db*

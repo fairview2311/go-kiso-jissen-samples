@@ -2,7 +2,9 @@ package store
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"memos/internal/memo"
@@ -16,6 +18,7 @@ func TestStores(t *testing.T) {
 	}{
 		{"MemoryStore", NewMemoryStore()},
 		{"FileStore", NewFileStore(filepath.Join(t.TempDir(), "memos.json"))},
+		{"SqlStore", newTestSqlStore(t)},
 	}
 	for _, tt := range stores {
 		t.Run(tt.name, func(t *testing.T) {
@@ -74,5 +77,42 @@ func TestFileStoreKeepsMemos(t *testing.T) {
 	}
 	if got.Body != m.Body || !got.CreatedAt.Equal(m.CreatedAt) {
 		t.Errorf("読み直したメモ = %q %v、期待したのは %q %v", got.Body, got.CreatedAt, m.Body, m.CreatedAt)
+	}
+}
+
+// newTestSqlStore は、テスト用の SQLite のファイルを一時ディレクトリに作る。テストが終わると閉じる。
+func newTestSqlStore(t *testing.T) *SqlStore {
+	t.Helper()
+	s, err := NewSqlStore(filepath.Join(t.TempDir(), "memos.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	return s
+}
+
+// TestSqlStoreConcurrentSave は、50 個の goroutine から同時に保存しても、50 件とも残ることを確かめる。
+func TestSqlStoreConcurrentSave(t *testing.T) {
+	s := newTestSqlStore(t)
+	var wg sync.WaitGroup
+	for i := range 50 {
+		wg.Go(func() {
+			m, err := memo.New(fmt.Sprintf("メモ %d", i), "同時に保存する")
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if err := s.Save(m); err != nil {
+				t.Errorf("Save のエラー = %v", err)
+			}
+		})
+	}
+	wg.Wait()
+	list, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 50 {
+		t.Errorf("保存できたメモ = %d 件、期待したのは 50 件", len(list))
 	}
 }
