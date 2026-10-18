@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -15,18 +17,50 @@ var (
 )
 
 func main() {
-	title := "買い物リスト"
-	body := "牛乳と卵を買う"
-	pinned := true
-
-	if err := validateTitle(title); err != nil {
-		if errors.Is(err, ErrTitleTooLong) {
-			fmt.Println("題を短くしてください")
-		}
-		fmt.Println("エラー:", err)
-		os.Exit(1)
+	titles := []string{"買い物リスト", "会議のメモ", "読みたい本"}
+	bodies := map[string]string{
+		"買い物リスト": "牛乳と卵を買う",
+		"会議のメモ":  "来週の会議で予算を決める",
+		"読みたい本":  "Go の本を2冊",
 	}
-	printMemo(title, body, pinned)
+	pinned := map[string]bool{
+		"会議のメモ": true,
+	}
+
+	titles = append(titles, "週末の予定")
+	bodies["週末の予定"] = "本屋に行く"
+
+	for _, title := range titles {
+		if err := validateTitle(title); err != nil {
+			fmt.Println("エラー:", err)
+			os.Exit(1)
+		}
+	}
+
+	slices.SortFunc(titles, func(a, b string) int {
+		if pinned[a] != pinned[b] {
+			if pinned[a] {
+				return -1
+			}
+			return 1
+		}
+		return strings.Compare(a, b)
+	})
+
+	word := ""
+	if len(os.Args) > 1 {
+		word = os.Args[1]
+	}
+	found := 0
+	for _, title := range titles {
+		body := bodies[title]
+		if word != "" && !strings.Contains(title, word) && !strings.Contains(body, word) {
+			continue
+		}
+		printMemo(title, body, pinned[title])
+		found++
+	}
+	fmt.Printf("%d 件のメモ（全部で %d 件）\n", found, len(titles))
 }
 
 // validateTitle は、題が空でなく、maxTitleLen 文字以内かを確かめる。
@@ -59,6 +93,4 @@ func printMemo(title, body string, pinned bool) {
 	} else {
 		fmt.Println("ピン留め: いいえ")
 	}
-	n, b := titleLength(title)
-	fmt.Printf("題の文字数: %d（バイト数: %d）\n", n, b)
 }
