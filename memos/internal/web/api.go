@@ -30,6 +30,7 @@ func (srv *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/memos/{id}", srv.getMemo)
 	mux.HandleFunc("PUT /api/memos/{id}", srv.updateMemo)
 	mux.HandleFunc("DELETE /api/memos/{id}", srv.deleteMemo)
+	srv.registerPages(mux)
 	return logRequests(mux)
 }
 

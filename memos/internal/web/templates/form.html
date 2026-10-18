@@ -1,0 +1,15 @@
+{{template "header"}}
+<h1>{{if .Memo}}メモを直す{{else}}新しいメモ{{end}}</h1>
+{{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+<form class="memo" method="post" action="{{if .Memo}}/memos/{{.Memo.ID}}{{else}}/memos{{end}}">
+  <label>題<input name="title" value="{{.Title}}"></label>
+  <label>本文<textarea name="body" rows="5">{{.Body}}</textarea></label>
+  <label class="check"><input type="checkbox" name="pinned"{{if .Pinned}} checked{{end}}> ピン留め</label>
+  <button>保存する</button>
+</form>
+{{if .Memo}}
+<form class="delete" method="post" action="/memos/{{.Memo.ID}}/delete">
+  <button>このメモを消す</button>
+</form>
+{{end}}
+{{template "footer"}}
