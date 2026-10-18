@@ -62,13 +62,14 @@ func (m *Memo) Contains(word string) bool {
 	return strings.Contains(m.Title, word) || strings.Contains(m.Body, word)
 }
 
-// String は、メモを1行の文字列にする。fmt.Println などは、この形で表示する。
+// String は、メモを1行の文字列にする。本文の改行は空白にする。fmt.Println などは、この形で表示する。
 func (m *Memo) String() string {
 	mark := " "
 	if m.Pinned {
 		mark = "*"
 	}
-	return fmt.Sprintf("%s %s %s  %s", mark, m.ID[:8], runewidth.FillRight(m.Title, 22), m.Body)
+	body := strings.ReplaceAll(m.Body, "\n", " ")
+	return fmt.Sprintf("%s %s %s  %s", mark, m.ID[:8], runewidth.FillRight(m.Title, 22), body)
 }
 
 // Sort は、ピン留めしたメモを先頭に、残りを題の順に並べ替える。
